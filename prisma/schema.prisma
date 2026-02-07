@@ -1,0 +1,115 @@
+// Traction - Personal Project Management
+// Prisma Schema based on PRD v1.0
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─── Projects ────────────────────────────────────────────────────────────────
+// Projects are the top-level organizational unit containing sections and tasks
+
+model Project {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @db.VarChar(255)
+  description String?   @db.Text
+  imageUrl    String?   @map("image_url") @db.Text
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+  sortOrder   Int       @default(0) @map("sort_order")
+  isArchived  Boolean   @default(false) @map("is_archived")
+
+  // Relations
+  sections Section[]
+
+  @@map("projects")
+}
+
+// ─── Sections ────────────────────────────────────────────────────────────────
+// Sections organize tasks within a project (e.g., To Do, In Progress, Done)
+// In Kanban view, sections become columns
+
+model Section {
+  id        String   @id @default(uuid()) @db.Uuid
+  projectId String   @map("project_id") @db.Uuid
+  name      String   @db.VarChar(255)
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks   Task[]
+
+  @@map("sections")
+}
+
+// ─── Task Status Enum ────────────────────────────────────────────────────────
+// Universal status values as defined in PRD Appendix A
+
+enum TaskStatus {
+  not_started
+  in_progress
+  on_hold
+  completed
+}
+
+// ─── Tasks ───────────────────────────────────────────────────────────────────
+// Individual work items that belong to a section within a project
+
+model Task {
+  id          String      @id @default(uuid()) @db.Uuid
+  sectionId   String      @map("section_id") @db.Uuid
+  title       String      @db.VarChar(500)
+  description String?     @db.Text
+  status      TaskStatus  @default(not_started)
+  dueDate     DateTime?   @map("due_date") @db.Date
+  completedAt DateTime?   @map("completed_at") @db.Timestamptz
+  sortOrder   Int         @default(0) @map("sort_order")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime    @default(now()) @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations
+  section     Section      @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  comments    Comment[]
+  attachments Attachment[]
+
+  @@map("tasks")
+}
+
+// ─── Comments ────────────────────────────────────────────────────────────────
+// User comments attached to tasks for notes and context
+
+model Comment {
+  id        String   @id @default(uuid()) @db.Uuid
+  taskId    String   @map("task_id") @db.Uuid
+  body      String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("comments")
+}
+
+// ─── Attachments ─────────────────────────────────────────────────────────────
+// File attachments stored in Supabase Storage, linked to tasks
+
+model Attachment {
+  id        String   @id @default(uuid()) @db.Uuid
+  taskId    String   @map("task_id") @db.Uuid
+  fileName  String   @map("file_name") @db.VarChar(500)
+  fileUrl   String   @map("file_url") @db.Text
+  fileSize  Int      @map("file_size")
+  mimeType  String   @map("mime_type") @db.VarChar(100)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relations
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@map("attachments")
+}
