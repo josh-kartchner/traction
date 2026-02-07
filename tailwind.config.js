@@ -1,6 +1,5 @@
-import type { Config } from "tailwindcss";
-
-const config: Config = {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   darkMode: ["class"],
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -43,7 +42,6 @@ const config: Config = {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        // Task status colors from PRD
         status: {
           "not-started": "#9CA3AF",
           "in-progress": "#3B82F6",
@@ -93,5 +91,3 @@ const config: Config = {
   },
   plugins: [require("tailwindcss-animate")],
 };
-
-export default config;
