@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
-import type { UpdateTaskInput } from "@/lib/types";
 
-// GET /api/tasks/[id] - Get task detail with comments and attachments
+// GET /api/tasks/[id] - Get a single task
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -17,19 +15,27 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     const task = await prisma.task.findUnique({
       where: { id },
       include: {
+        section: {
+          include: {
+            project: {
+              include: {
+                sections: {
+                  orderBy: { sortOrder: "asc" },
+                },
+              },
+            },
+          },
+        },
         comments: {
-          orderBy: { createdAt: "asc" },
+          orderBy: { createdAt: "desc" },
         },
         attachments: {
           orderBy: { createdAt: "desc" },
-        },
-        section: {
-          include: {
-            project: true,
-          },
         },
       },
     });
@@ -48,13 +54,12 @@ export async function GET(
   }
 }
 
-// PATCH /api/tasks/[id] - Update task
+// PATCH /api/tasks/[id] - Update a task
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -62,47 +67,29 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body: UpdateTaskInput = await request.json();
+    const { id } = await params;
+    const body = await request.json();
 
-    // Build update data
     const updateData: Record<string, unknown> = {};
-
-    if (body.sectionId !== undefined) {
-      // Verify new section exists
-      const section = await prisma.section.findUnique({
-        where: { id: body.sectionId },
-      });
-      if (!section) {
-        return NextResponse.json(
-          { error: "Section not found" },
-          { status: 404 }
-        );
-      }
-      updateData.sectionId = body.sectionId;
-    }
 
     if (body.title !== undefined) {
       updateData.title = body.title.trim();
     }
-
     if (body.description !== undefined) {
       updateData.description = body.description?.trim() || null;
     }
-
     if (body.status !== undefined) {
       updateData.status = body.status;
-      // Set completedAt when marking as completed
-      if (body.status === "completed") {
-        updateData.completedAt = new Date();
-      } else {
-        updateData.completedAt = null;
-      }
     }
-
     if (body.dueDate !== undefined) {
       updateData.dueDate = body.dueDate ? new Date(body.dueDate) : null;
     }
-
+    if (body.completedAt !== undefined) {
+      updateData.completedAt = body.completedAt ? new Date(body.completedAt) : null;
+    }
+    if (body.sectionId !== undefined) {
+      updateData.sectionId = body.sectionId;
+    }
     if (body.sortOrder !== undefined) {
       updateData.sortOrder = body.sortOrder;
     }
@@ -122,13 +109,12 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/tasks/[id] - Delete task
+// DELETE /api/tasks/[id] - Delete a task
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -136,11 +122,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
+    const { id } = await params;
+
     await prisma.task.delete({
       where: { id },
     });
 
-    return new NextResponse(null, { status: 204 });
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Error deleting task:", error);
     return NextResponse.json(

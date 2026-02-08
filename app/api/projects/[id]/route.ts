@@ -1,21 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
-import type { UpdateProjectInput } from "@/lib/types";
 
-// GET /api/projects/[id] - Get project details with sections and tasks
+// GET /api/projects/[id] - Get a single project with sections and tasks
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const { id } = await params;
 
     const project = await prisma.project.findUnique({
       where: { id },
@@ -45,13 +45,12 @@ export async function GET(
   }
 }
 
-// PATCH /api/projects/[id] - Update project
+// PATCH /api/projects/[id] - Update a project
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params;
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -59,18 +58,16 @@ export async function PATCH(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body: UpdateProjectInput = await request.json();
+    const { id } = await params;
+    const body = await request.json();
 
     const project = await prisma.project.update({
       where: { id },
       data: {
-        ...(body.name !== undefined && { name: body.name.trim() }),
-        ...(body.description !== undefined && {
-          description: body.description?.trim() || null,
-        }),
-        ...(body.imageUrl !== undefined && { imageUrl: body.imageUrl }),
-        ...(body.sortOrder !== undefined && { sortOrder: body.sortOrder }),
-        ...(body.isArchived !== undefined && { isArchived: body.isArchived }),
+        name: body.name?.trim(),
+        description: body.description?.trim() || null,
+        imageUrl: body.imageUrl || null,
+        isArchived: body.isArchived,
       },
     });
 
@@ -79,6 +76,35 @@ export async function PATCH(
     console.error("Error updating project:", error);
     return NextResponse.json(
       { error: "Failed to update project" },
+      { status: 500 }
+    );
+  }
+}
+
+// DELETE /api/projects/[id] - Delete a project
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id } = await params;
+
+    await prisma.project.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Error deleting project:", error);
+    return NextResponse.json(
+      { error: "Failed to delete project" },
       { status: 500 }
     );
   }
