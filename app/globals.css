@@ -35,11 +35,34 @@
     --radius: 0.75rem;
   }
 
-  /* Future: Dark mode support */
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    /* ... dark mode variables would go here */
+    --background: 222 47% 11%; /* #0f172a */
+    --foreground: 210 40% 98%; /* #f8fafc */
+
+    --card: 222 47% 14%; /* #1e293b */
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 14%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 217 91% 60%; /* #3b82f6 */
+    --primary-foreground: 222 47% 11%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 217 91% 60%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 22%;
+    --input: 217 33% 22%;
+    --ring: 217 91% 60%;
   }
 }
 
