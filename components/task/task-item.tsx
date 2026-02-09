@@ -116,7 +116,7 @@ export function TaskItem({ task, projectId, onUpdate, isDragging, dragHandleProp
             <StatusBadge status={task.status} />
           )}
           {task.dueDate && (
-            <DueDate date={task.dueDate} isCompleted={task.status === "completed"} />
+            <DueDate date={task.dueDate} />
           )}
         </div>
       </div>
