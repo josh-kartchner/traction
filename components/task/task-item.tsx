@@ -113,7 +113,7 @@ export function TaskItem({ task, projectId, onUpdate, isDragging, dragHandleProp
 
         <div className="flex items-center gap-2 mt-1.5 flex-wrap">
           {task.status !== "completed" && task.status !== "not_started" && (
-            <StatusBadge status={task.status} size="sm" />
+            <StatusBadge status={task.status} />
           )}
           {task.dueDate && (
             <DueDate date={task.dueDate} isCompleted={task.status === "completed"} />
